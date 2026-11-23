@@ -1,0 +1,122 @@
+[
+  {
+    "test": "alice dans Grafana",
+    "attendu": "Viewer, pas GrafanaAdmin",
+    "observe": "Viewer, GrafanaAdmin=False",
+    "ok": true
+  },
+  {
+    "test": "bob dans Grafana",
+    "attendu": "Editor, pas GrafanaAdmin",
+    "observe": "Editor, GrafanaAdmin=False",
+    "ok": true
+  },
+  {
+    "test": "charlie dans Grafana",
+    "attendu": "Admin, pas GrafanaAdmin",
+    "observe": "Admin, GrafanaAdmin=False",
+    "ok": true
+  },
+  {
+    "test": "Charlie crée « Nova Services — Démonstration IAM »",
+    "attendu": "200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Alice consulte le tableau",
+    "attendu": "200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Alice enregistre une modification",
+    "attendu": "403 (refus)",
+    "observe": "403",
+    "ok": true
+  },
+  {
+    "test": "Bob enregistre une modification",
+    "attendu": "200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Charlie voit la modification de Bob",
+    "attendu": "updatedBy=bob",
+    "observe": "updatedBy=bob",
+    "ok": true
+  },
+  {
+    "test": "Mobilité de Bob vers Audit",
+    "attendu": "Viewer après nouvelle connexion OAuth",
+    "observe": "Viewer",
+    "ok": true
+  },
+  {
+    "test": "Bob (Audit) modifie le tableau",
+    "attendu": "403 (refus)",
+    "observe": "403",
+    "ok": true
+  },
+  {
+    "test": "Bob rétabli dans Dev",
+    "attendu": "Editor",
+    "observe": "Editor",
+    "ok": true
+  },
+  {
+    "test": "Alice sans groupe autorisé",
+    "attendu": "refus par Authentik",
+    "observe": "refus",
+    "ok": true
+  },
+  {
+    "test": "Alice rétablie dans RH",
+    "attendu": "connexion OK",
+    "observe": "OK",
+    "ok": true
+  },
+  {
+    "test": "Bob — dossier Dev (URL directe)",
+    "attendu": "lecture 200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Bob — modification dans Dev",
+    "attendu": "200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Bob — dossier RH (URL directe)",
+    "attendu": "refus 403",
+    "observe": "403",
+    "ok": true
+  },
+  {
+    "test": "Alice — dossier RH (URL directe)",
+    "attendu": "lecture 200",
+    "observe": "200",
+    "ok": true
+  },
+  {
+    "test": "Alice — modification dans RH",
+    "attendu": "refus 403",
+    "observe": "403",
+    "ok": true
+  },
+  {
+    "test": "Alice — dossier Dev (URL directe)",
+    "attendu": "refus 403",
+    "observe": "403",
+    "ok": true
+  },
+  {
+    "test": "Charlie — dossiers Dev et RH",
+    "attendu": "200 / 200",
+    "observe": "200 / 200",
+    "ok": true
+  }
+]

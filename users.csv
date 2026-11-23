@@ -1,0 +1,6 @@
+username,name,email,department,role,clearance_level
+david,David Leroy,david@nova-services.test,Development,Frontend Developer,1
+emma,Emma Petit,emma@nova-services.test,RH,RH Assistant,2
+frank,Frank Moreau,frank@nova-services.test,IT,Technician,3
+grace,Grace Simon,grace@nova-services.test,Finance,Accountant,2
+henry,Henry Noel,henry@nova-services.test,Audit,Auditor,4

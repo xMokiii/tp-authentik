@@ -9,3 +9,4 @@ __pycache__/
 
 # Enonces des TP (support du formateur)
 *.pdf
+secrets/
