@@ -1,0 +1,143 @@
+# TP1 — Nova Services : Authentik + Grafana + Gitea
+# Nom de projet fixe : les volumes nommés deviennent nova-iam_postgres_data, etc.
+name: nova-iam
+
+x-authentik-env: &authentik-env
+  AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY manquant - lancer scripts/init_env.py}
+  AUTHENTIK_POSTGRESQL__HOST: postgres
+  AUTHENTIK_POSTGRESQL__PORT: "5432"
+  AUTHENTIK_POSTGRESQL__NAME: authentik
+  AUTHENTIK_POSTGRESQL__USER: authentik
+  AUTHENTIK_POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant - lancer scripts/init_env.py}
+  AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+  AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant - lancer scripts/init_env.py}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - iam-network
+    # Aucun port publié : joignable uniquement via iam-network (postgres:5432)
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.8.6
+    command: server
+    restart: unless-stopped
+    environment: *authentik-env
+    volumes:
+      - ./data/authentik:/data
+      - ./custom-templates:/templates
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9443:9443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - iam-network
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.8.6
+    command: worker
+    restart: unless-stopped
+    # root conservé comme dans le modèle officiel (gestion des fichiers) ;
+    # pas de privileged, pas de socket Docker monté.
+    user: root
+    environment: *authentik-env
+    volumes:
+      - ./data/authentik:/data
+      - ./certs:/certs
+      - ./custom-templates:/templates
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - iam-network
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD manquant - lancer scripts/init_env.py}
+      GF_SERVER_ROOT_URL: http://localhost:${GRAFANA_PORT:-3000}/
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || curl -fsS -o /dev/null http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iam-network
+
+  gitea:
+    image: gitea/gitea:28.4.0
+    restart: unless-stopped
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__database__PATH: /data/gitea/gitea.db
+      GITEA__DEFAULT__APP_NAME: "Nova Services — Gitea"
+      GITEA__server__DOMAIN: localhost
+      GITEA__server__HTTP_PORT: "3000"
+      GITEA__server__ROOT_URL: http://localhost:3001/
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__mailer__ENABLED: "false"
+    volumes:
+      - gitea_data:/data
+    ports:
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      # L'interface répond même avant l'assistant ; /api/healthz est testé après.
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://localhost:3000/ || wget -q -O /dev/null http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iam-network
+
+networks:
+  iam-network:
+    name: iam-network
+
+volumes:
+  postgres_data:
+  grafana_data:
+  gitea_data:

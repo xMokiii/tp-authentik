@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+data/
+certs/
+backups/
+/captures/
+__pycache__/
+
+# Enonces des TP (support du formateur)
+*.pdf
